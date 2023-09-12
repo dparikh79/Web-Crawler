@@ -1,0 +1,8 @@
+# .gitignore
+
+# Ignore the virtual environment
+webcrawler_env/
+
+# Python cache files
+__pycache__/
+*.pyc
