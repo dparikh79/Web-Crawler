@@ -6,3 +6,6 @@ webcrawler_env/
 # Python cache files
 __pycache__/
 *.pyc
+
+# Output PDF file
+output.pdf
