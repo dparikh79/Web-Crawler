@@ -1,61 +1,49 @@
 # Web-Crawler
 
-A Scrapy project designed to scrape data from websites with various advanced features such as respecting `robots.txt`, handling CAPTCHAs, rotating user agents, proxy rotation, and more.
+A small same-domain web crawler that walks a site breadth-first for a fixed time budget, keeps only English text, and writes the harvested content to a PDF. Used as a data-collection step for a retrieval-augmented question-answering project (see the companion `AI-Assistant` repo, which consumes a `Web-Crawler/output_uscis_3.pdf` produced by this script).
 
-## Setup
+## What it does
 
-1. **Clone the Repository**:
-    ```bash
-    git clone https://github.com/dmp1999/Web-Crawler.git
-    cd Web-Crawler
+`crawler.py` (around 80 lines) implements:
 
-2. **Set Up a Virtual Environment** (optional but recommended):
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  
-    
-On Windows, use `venv\Scripts\activate`
+1. BFS over links whose `urlparse().netloc` matches the start URL's domain (no cross-domain wandering).
+2. Page fetch via `requests`, parse via `BeautifulSoup`, text extraction with whitespace normalized.
+3. Language gate using `langdetect`; non-English pages are skipped.
+4. Light sanitization that keeps alphanumerics, spaces, and basic punctuation.
+5. PDF output via `fpdf`, one block per visited URL.
+6. A wall-clock budget (default 30 seconds) so the queue stops draining once time is up.
 
-3. **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
+The start URL is hardcoded at the bottom of `main()`. Change it there, or edit the file to accept a CLI argument.
 
-4. **Configuration:**
-Rename the `.env.sample` to `.env` and update the configurations as needed.
+## Dependencies
 
-## Features
-- Respects robots.txt.
-- Handles CAPTCHAs using the 2Captcha service.
-- Rotates user agents.
-- Uses proxy rotation to avoid IP bans.
-- Stores scraped data in both an SQLite database and as PDF files.
-- Allows setting a custom depth limit for crawling.
-- Allows setting a custom timeout duration for requests.
-- Allows setting a custom duration after which the spider stops crawling.
+```
+requests
+beautifulsoup4
+langdetect
+fpdf
+```
 
-## Running the Spider with Custom Depth Limit
-To set a custom depth limit for the spider, use the following command:
+Install with `pip install requests beautifulsoup4 langdetect fpdf`.
 
-    scrapy crawl advanced_spider -a depth_limit=YOUR_DEPTH_LIMIT
+## Run
 
-Replace YOUR_DEPTH_LIMIT with the desired depth limit value.
+```bash
+python crawler.py
+```
 
-## Running the Spider with Custom Timeout:
-To set a custom timeout duration for the spider, use the following command:
+Output is written to `output.pdf` in the working directory.
 
-    scrapy crawl advanced_spider -a timeout=YOUR_TIMEOUT_DURATION
-    
-Replace YOUR_TIMEOUT_DURATION with the desired timeout duration in seconds.
+## Limitations (honest list)
 
-## Running the Spider with Custom Crawl Duration:
-To set a custom duration after which the spider stops crawling, use the following command:
+- No `robots.txt` handling, no rate limiting, no retries, no proxy or user-agent rotation.
+- No concurrency: pages are fetched serially.
+- No deduplication beyond the visited set; query-string variants count as distinct URLs.
+- PDF output is plain text dumped through `fpdf`; non-ASCII characters that survive sanitization can fail the default font.
+- The 30-second budget is wall-clock, not per-request; a slow page can eat most of it.
 
-    scrapy crawl advanced_spider -a crawl_duration=YOUR_CRAWL_DURATION
-    
-Replace YOUR_CRAWL_DURATION with the desired duration in minutes.
+Treat this as a focused utility for grabbing the text of a single domain into one file, not a production crawler.
 
-## Contributing
-If you'd like to contribute, please fork the repository and use a feature branch. Pull requests are warmly welcome.
+## License
 
-## Licensing
-The code in this project is licensed under MIT license.
+MIT.
